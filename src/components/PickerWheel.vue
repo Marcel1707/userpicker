@@ -1,16 +1,23 @@
 <template>
-  <div class="chartContainer" ref="chartContainer"></div>
-  <Button label="Spin" @click="rotateChart"  />
+  <div v-show="users && users.length > 0" class="chartContainer">
+    <div ref="chartContainer"></div>
+    <Button label="Spin" @click="rotateChart"/>
+  </div>
+
+  <div v-show="!users || users.length === 0">
+    <h2>No users defined.</h2>
+  </div>
 
   <Dialog v-model:visible="dialogVisible" modal header="🎉 Congratulations!" :style="{ width: '25rem' }">
-    <span class="text-surface-500 dark:text-surface-400 block mb-8">{{ selectedUser.name }}, it’s your time to shine!</span>
+    <span class="text-surface-500 dark:text-surface-400 block mb-8">{{
+        selectedUser.name
+      }}, it’s your time to shine!</span>
   </Dialog>
 </template>
 
 <script>
 import * as d3 from "d3";
-import { schemePastel1 } from "d3-scale-chromatic";
-import { watch } from 'vue';
+import {schemePastel1} from "d3-scale-chromatic";
 
 export default {
   props: {
@@ -27,13 +34,15 @@ export default {
     };
   },
   mounted() {
-    this.drawChart(); // Initial drawing of the chart
+    this.drawChart();
   },
   watch: {
     users: {
-      immediate: true, // Call the handler immediately on component mount
+      immediate: true,
       handler() {
-        this.drawChart(); // Redraw the chart when users change
+        if (this.users && this.users.length > 0) {
+          this.drawChart();
+        }
       }
     }
   },
@@ -99,11 +108,11 @@ export default {
     },
 
     rotateChart() {
-      const duration = 3000;
+      const duration = 5000;
       const rounds = 5;
 
       const additionalRotation = Math.floor(Math.random() * 360);
-      const totalRotation = 360 + this.currentAngle + additionalRotation;
+      const totalRotation = rounds * 360 + this.currentAngle + additionalRotation;
 
       this.chartGroup
           .transition()

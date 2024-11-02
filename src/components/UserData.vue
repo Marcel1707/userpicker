@@ -1,32 +1,65 @@
 <template>
-  <h3>User List</h3>
+  <h2>Users</h2>
 
   <div class="p-field p-grid" style="display: flex; gap: 8px; width: 100%;">
-    <InputText v-model="newUserName" placeholder="Enter a username" style="flex: 1;" />
-    <Button label="Add User" icon="pi pi-plus" @click="addUser" class="addButton" style="flex: none;" />
+    <InputText v-model="newUserName" placeholder="Enter a username" style="flex: 1;"/>
+    <Button label="Add User" icon="pi pi-plus" @click="addUser" class="addButton" style="flex: none;"/>
   </div>
 
-  <DataTable :value="users" v-model:editingRows="editingRows" editMode="row" @row-edit-save="onRowEditSave" class="user-table">
+  <DataTable :value="users" v-model:editingRows="editingRows" editMode="row" @row-edit-save="onRowEditSave"
+             class="user-table">
 
     <Column field="name" header="Username" style="width: 90%">
       <template #editor="{ data, field }">
-        <InputText v-model="data[field]" />
+        <InputText v-model="data[field]"/>
       </template>
     </Column>
 
-    <Column style="width: 5%">
-      <template #body="{ index }">
-        <Button icon="pi pi-trash" @click="deleteUser(index)" class="p-button p-component p-button-icon-only p-button-secondary p-button-rounded p-button-text p-datatable-row-editor-init">
-        </Button>
+    <Column frozen
+            align-frozen="right"
+            style="min-width: 8rem"
+            bodyStyle="text-align:center"
+    >
+      <template #body="{ editorInitCallback, index }">
+        <Button
+            icon="pi pi-pencil"
+            severity="secondary"
+            class="p-link"
+            text
+            rounded
+            @click="editorInitCallback"
+        />
+        <Button
+            icon="pi pi-trash"
+            severity="secondary"
+            text
+            rounded
+            @click="deleteUser(index)"
+        />
+      </template>
+
+      <template #editor="{ editorSaveCallback, editorCancelCallback, index }">
+        <Button
+            icon="pi pi-check"
+            severity="secondary"
+            text
+            rounded
+            @click="editorSaveCallback"
+        />
+        <Button
+            icon="pi pi-times"
+            severity="secondary"
+            text
+            rounded
+            @click="editorCancelCallback"
+        />
       </template>
     </Column>
-
-    <Column :rowEditor="true" style="width: 5%" bodyStyle="text-align:center"></Column>
   </DataTable>
 </template>
 
 <script>
-import { defineComponent, ref } from 'vue';
+import {defineComponent, ref} from 'vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import DataTable from 'primevue/datatable';
@@ -46,13 +79,13 @@ export default defineComponent({
     }
   },
   emits: ['update-users'],
-  setup(props, { emit }) {
+  setup(props, {emit}) {
     const newUserName = ref('');
     const editingRows = ref([]);
 
     const addUser = () => {
       if (newUserName.value) {
-        const newUser = { name: newUserName.value };
+        const newUser = {name: newUserName.value};
         const updatedUsers = [...props.users, newUser];
         emit('update-users', updatedUsers);
         newUserName.value = '';
@@ -60,9 +93,9 @@ export default defineComponent({
     };
 
     const onRowEditSave = (event) => {
-      const { newData, index } = event;
+      const {newData, index} = event;
       const updatedUsers = props.users.map((user, i) => {
-        return i === index ? { ...user, name: newData.name } : user;
+        return i === index ? {...user, name: newData.name} : user;
       });
       emit('update-users', updatedUsers);
     };
