@@ -5,8 +5,10 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
+import ToastService from 'primevue/toastservice';
 
 const app = createApp(App);
+app.use(ToastService);
 app.component("Button", Button);
 app.component("Dialog", Dialog)
 

@@ -5,11 +5,11 @@ import UserData from './components/UserData.vue'
 import {ref} from "vue";
 
 const users = ref([
-  { name: "User 1" },
-  { name: "User 2" },
-  { name: "User 3" },
-  { name: "User 4" },
-  { name: "User 5" }
+  { name: "User 1", enabled: false },
+  { name: "User 2", enabled: false },
+  { name: "User 3", enabled: true },
+  { name: "User 4", enabled: true },
+  { name: "User 5", enabled: true }
 ]);
 
 const updateUsers = (newUsers) => {
@@ -21,7 +21,7 @@ const updateUsers = (newUsers) => {
 <template>
   <div class="container">
     <div class="left-section">
-      <PickerWheel :users="users"></PickerWheel>
+      <PickerWheel :users="users", @update-users="updateUsers"></PickerWheel>
     </div>
     <div class="right-section">
       <UserData :users="users" @update-users="updateUsers"></UserData>
@@ -49,6 +49,7 @@ const updateUsers = (newUsers) => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-align: center;
 }
 
 </style>

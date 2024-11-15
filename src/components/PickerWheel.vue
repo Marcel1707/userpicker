@@ -1,23 +1,22 @@
 <template>
-  <div v-show="users && users.length > 0" class="chartContainer">
+  <div v-show="enabledUsers && enabledUsers.length > 0" class="chartContainer">
     <div ref="chartContainer"></div>
-    <Button label="Spin" @click="rotateChart"/>
+    <Button icon="pi pi-undo" label="Spin" @click="rotateChart" style="margin-top: 1em"/>
   </div>
 
-  <div v-show="!users || users.length === 0">
-    <h2>No users defined.</h2>
+  <div v-show="!enabledUsers || enabledUsers.length === 0" class="chartContainer">
+    <h2>No users defined or enabled.</h2>
   </div>
 
-  <Dialog v-model:visible="dialogVisible" modal header="🎉 Congratulations!" :style="{ width: '25rem' }">
-    <span class="text-surface-500 dark:text-surface-400 block mb-8">{{
-        selectedUser.name
-      }}, it’s your time to shine!</span>
+  <Dialog v-model:visible="dialogVisible" modal header="🎉 Congratulations!" :style="{ width: '25rem', textAlign: 'center' }">
+    <div style="margin-bottom: 1rem">{{ selectedUser.name }}, it’s your time to shine!</div>
+    <Button type="button" label="Continue" @click="onUserSelected"></Button>
   </Dialog>
 </template>
 
 <script>
 import * as d3 from "d3";
-import {schemePastel1} from "d3-scale-chromatic";
+import { schemePastel1 } from "d3-scale-chromatic";
 
 export default {
   props: {
@@ -26,10 +25,12 @@ export default {
       required: true,
     },
   },
+  emits: ['update-users'], // Declare the event to be emitted
   data() {
     return {
       currentAngle: 0,
       selectedUser: undefined,
+      enabledUsers: [],
       dialogVisible: false,
     };
   },
@@ -40,25 +41,25 @@ export default {
     users: {
       immediate: true,
       handler() {
-        if (this.users && this.users.length > 0) {
-          this.drawChart();
-        }
-      }
-    }
+        this.drawChart();
+      },
+    },
   },
   methods: {
     drawChart() {
+      // Filter enabled users and draw the chart
+      this.enabledUsers = this.users.filter(user => user.enabled === true);
       d3.select(this.$refs.chartContainer).select("svg").remove();
 
       const width = 1000;
       const height = 1000;
 
-      const color = d3.scaleOrdinal(this.users.map(user => user.name)).range(schemePastel1);
+      const color = d3.scaleOrdinal(this.enabledUsers.map(user => user.name)).range(schemePastel1);
       const pie = d3.pie().value(() => 10);
       const arc = d3.arc().innerRadius(0).outerRadius(Math.min(width, height) / 2 - 1);
       const labelRadius = arc.outerRadius()() * 0.7;
       const arcLabel = d3.arc().innerRadius(labelRadius).outerRadius(labelRadius);
-      const arcs = pie(this.users);
+      const arcs = pie(this.enabledUsers);
 
       this.svg = d3.select(this.$refs.chartContainer)
           .append("svg")
@@ -73,10 +74,10 @@ export default {
           .selectAll("path")
           .data(arcs)
           .join("path")
-          .attr("fill", d => color(d.data.name)) // Make sure to use d.data.name
+          .attr("fill", d => color(d.data.name))
           .attr("d", arc)
-          .attr("stroke", "white") // Stroke color for pie slices
-          .attr("stroke-width", 5) // Stroke width for pie slices
+          .attr("stroke", "white")
+          .attr("stroke-width", 8)
           .append("title")
           .text(d => d.data.name);
 
@@ -102,9 +103,9 @@ export default {
       this.svg
           .append("polygon")
           .attr("points", `0,${-height / 2 + 40} -40,${-height / 2 - 20} 40,${-height / 2 - 20}`) // Triangle pointing downwards
-          .attr("fill", "white")
-          .attr("stroke", "white")
-          .attr("stroke-width", 5);
+          .attr("stroke", "var(--p-primary-color)")
+          .attr("fill", "var(--p-primary-contrast-color)")
+          .attr("stroke-width", 8);
     },
 
     rotateChart() {
@@ -124,10 +125,25 @@ export default {
           })
           .on("end", () => {
             this.currentAngle = totalRotation % 360;
-            const userIndex = Math.floor((360 - this.currentAngle) / (360 / this.users.length)) % this.users.length;
-            this.selectedUser = this.users[userIndex];
+            const userIndex = Math.floor((360 - this.currentAngle) / (360 / this.enabledUsers.length)) % this.enabledUsers.length;
+            this.selectedUser = this.enabledUsers[userIndex];
             this.dialogVisible = true;
           });
+    },
+
+    onUserSelected() {
+      this.dialogVisible = false;
+
+      // Update user enabled status based on the selection
+      const updatedUsers = this.users.map(user => ({
+        ...user,
+        enabled: this.selectedUser === user ? false : user.enabled
+      }));
+
+      // Emit the updated user list
+      this.$emit('update-users', updatedUsers);
+
+      this.selectedUser = undefined; // Reset the selected user
     }
   }
 };

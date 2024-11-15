@@ -1,13 +1,18 @@
 <template>
   <h2>Users</h2>
 
-  <div class="p-field p-grid" style="display: flex; gap: 8px; width: 100%;">
-    <InputText v-model="newUserName" placeholder="Enter a username" style="flex: 1;"/>
-    <Button label="Add User" icon="pi pi-plus" @click="addUser" class="addButton" style="flex: none;"/>
+  <Toast/>
+
+  <div class="p-field p-grid usernameContainer">
+    <InputText class="usernameInput" v-model="newUserName" placeholder="Enter a username"/>
+    <Button label="Add User" icon="pi pi-plus" @click="addUser" class="addUsernameButton" style="flex: none;"/>
   </div>
 
-  <DataTable :value="users" v-model:editingRows="editingRows" editMode="row" @row-edit-save="onRowEditSave"
+  <DataTable :value="users" v-model:editingRows="editingRows" v-model:selection="selectedUsers"
+             @update:selection="onSelectionChange" editMode="row" @row-edit-save="onRowEditSave"
              class="user-table">
+
+    <Column selectionMode="multiple"></Column>
 
     <Column field="name" header="Username" style="width: 90%">
       <template #editor="{ data, field }">
@@ -59,11 +64,14 @@
 </template>
 
 <script>
-import {defineComponent, ref} from 'vue';
+import {defineComponent, ref, watch} from 'vue';
+import {useToast} from "primevue/usetoast";
 import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
 import InputText from 'primevue/inputtext';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import Toast from "primevue/toast";
 
 export default defineComponent({
   components: {
@@ -71,6 +79,8 @@ export default defineComponent({
     Column,
     InputText,
     Button,
+    Checkbox,
+    Toast
   },
   props: {
     users: {
@@ -80,24 +90,45 @@ export default defineComponent({
   },
   emits: ['update-users'],
   setup(props, {emit}) {
-    const newUserName = ref('');
+    const username = ref('');
     const editingRows = ref([]);
+    const selectedUsers = ref();
+    const toast = useToast();
+
+    watch(
+        () => props.users,
+        (newUsers) => {
+          if (newUsers) {
+            selectedUsers.value = newUsers.filter(user => user.enabled === true);
+          }
+        },
+        {immediate: true}
+    );
 
     const addUser = () => {
-      if (newUserName.value) {
-        const newUser = {name: newUserName.value};
-        const updatedUsers = [...props.users, newUser];
-        emit('update-users', updatedUsers);
-        newUserName.value = '';
+      if (username.value) {
+        if (props.users.map(user => user.name).includes(username.value)) {
+          toast.add({severity: 'error', summary: 'Error', detail: 'The username must be unique!', life: 3000});
+        } else {
+          const newUser = {name: username.value, enabled: true};
+          const updatedUsers = [...props.users, newUser];
+          emit('update-users', updatedUsers);
+          username.value = '';
+        }
       }
     };
 
-    const onRowEditSave = (event) => {
+    const updateUser = (event) => {
       const {newData, index} = event;
-      const updatedUsers = props.users.map((user, i) => {
-        return i === index ? {...user, name: newData.name} : user;
-      });
-      emit('update-users', updatedUsers);
+
+      if (props.users.some((user, i) => user.name === newData.name && i !== index)) {
+        toast.add({severity: 'error', summary: 'Error', detail: 'The username must be unique!', life: 3000});
+      } else {
+        const updatedUsers = props.users.map((user, i) => {
+          return i === index ? {...user, name: newData.name} : user;
+        });
+        emit('update-users', updatedUsers);
+      }
     };
 
     const deleteUser = (index) => {
@@ -105,12 +136,25 @@ export default defineComponent({
       emit('update-users', updatedUsers);
     };
 
+    const onSelectionChange = (event) => {
+      const enabledUsernames = new Set(event.map(user => user.name));
+      if (props.users) {
+        const updatedUsers = props.users.map(user => ({
+          ...user,
+          enabled: enabledUsernames.has(user.name)
+        }));
+        emit('update-users', updatedUsers);
+      }
+    };
+
     return {
-      newUserName,
+      newUserName: username,
       editingRows,
       addUser,
-      onRowEditSave,
+      onRowEditSave: updateUser,
       deleteUser,
+      selectedUsers,
+      onSelectionChange
     };
   },
 });
@@ -118,12 +162,25 @@ export default defineComponent({
 
 <style>
 
-.addButton {
-  text-align: right;
-}
-
 .user-table {
   margin-top: 1rem;
   width: 100%;
 }
+
+.usernameContainer {
+  box-sizing: border-box;
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.usernameInput {
+  flex: 1;
+  margin-right: 8px;
+}
+
+.addUsernameButton {
+  flex-shrink: 0;
+}
+
 </style>
