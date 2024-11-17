@@ -9,7 +9,11 @@
   </div>
 
   <Dialog v-model:visible="dialogVisible" modal header="🎉 Congratulations!" :style="{ width: '25rem', textAlign: 'center' }">
-    <div style="margin-bottom: 1rem">{{ selectedUser.name }}, it’s your time to shine!</div>
+
+    <div :style="{  }">{{ selectedVerse.before}}</div>
+    <h2 :style="{ color: 'var(--p-primary-color)', fontWeight: 'bold'}">{{ selectedUser.name }}</h2>
+    <div :style="{ marginBottom: '1rem' }">{{ selectedVerse.after}}</div>
+
     <Button type="button" label="Continue" @click="onUserSelected"></Button>
   </Dialog>
 </template>
@@ -17,6 +21,7 @@
 <script>
 import * as d3 from "d3";
 import { schemePastel1 } from "d3-scale-chromatic";
+import verses from './verses.json';
 
 export default {
   props: {
@@ -32,10 +37,13 @@ export default {
       selectedUser: undefined,
       enabledUsers: [],
       dialogVisible: false,
+      verses: [],
+      selectedVerse: undefined
     };
   },
   mounted() {
     this.drawChart();
+    this.verses = verses;
   },
   watch: {
     users: {
@@ -47,8 +55,8 @@ export default {
   },
   methods: {
     drawChart() {
-      // Filter enabled users and draw the chart
-      this.enabledUsers = this.users.filter(user => user.enabled === true);
+      console.log(this.users)
+      this.enabledUsers = this.users ? this.users.filter(user => user.enabled === true) : [];
       d3.select(this.$refs.chartContainer).select("svg").remove();
 
       const width = 1000;
@@ -127,6 +135,7 @@ export default {
             this.currentAngle = totalRotation % 360;
             const userIndex = Math.floor((360 - this.currentAngle) / (360 / this.enabledUsers.length)) % this.enabledUsers.length;
             this.selectedUser = this.enabledUsers[userIndex];
+            this.selectedVerse = this.verses[Math.floor(Math.random() * this.verses.length)];
             this.dialogVisible = true;
           });
     },
